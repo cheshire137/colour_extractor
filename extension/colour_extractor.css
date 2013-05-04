@@ -49,6 +49,12 @@ body {
 .clearfix {
   display: inline-block;
 }
+.color-swatch {
+  width: 49px;
+  height: 200px;
+  display: inline-block;
+  float: left;
+}
 .hidden {
   display: none;
 }
