@@ -1,0 +1,71 @@
+a, a:link, a:visited, a:active, a:hover, a:focus {
+  color: #696969;
+  text-decoration: none;
+}
+a.btn {
+  display: block;
+  background: #eeeeee;
+  background: linear-gradient(to bottom, #eeeeee 0%, #cccccc 100%);
+  padding: 4px;
+  border-radius: 4px;
+  text-align: center;
+  border: 1px solid #ccc;
+  box-shadow: inset 0 0 1px 0 rgba(0, 0, 0, 0.2);
+}
+a.btn:hover, a.btn:focus {
+  background: #f2f5f6;
+  background: linear-gradient(to bottom, #f2f5f6 0%, #e3eaed 37%, #c8d7dc 100%);
+  color: #333;
+  border-color: #c8d7dc;
+}
+a.btn.disabled, a.btn.disabled:hover, a.btn.disabled:focus {
+  background: #cccccc;
+  background: linear-gradient(to bottom, #cccccc 0%, #eeeeee 100%);
+  color: #888;
+  cursor: default;
+  border-color: #ccc;
+}
+body {
+  margin: 0;
+  padding: 10px;
+  background-color: #F8F8F8;
+  color: #373737;
+  min-width: 245px;
+  overflow-x: hidden;
+  font-family: "Helvetica", "Arial", sans-serif;
+  font-weight: 300;
+  line-height: 1.6;
+  font-size: 14px;
+  text-shadow: 0 1px 1px #fff;
+}
+.clearfix:after {
+  content: ".";
+  display: block;
+  clear: both;
+  visibility: hidden;
+  line-height: 0;
+  height: 0;
+}
+.clearfix {
+  display: inline-block;
+}
+.hidden {
+  display: none;
+}
+hr {
+  border: none;
+  border-top: 1px solid #eee;
+  border-bottom: 1px solid #fff;
+  margin: 10px 0;
+}
+.pull-right {
+  float: right;
+}
+small {
+  font-size: 12px;
+}
+#status-message {
+  position: absolute;
+  width: 100%;
+  top: 2.3em;
+}
