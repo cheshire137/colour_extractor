@@ -49,11 +49,57 @@ body {
 .clearfix {
   display: inline-block;
 }
+.color-data {
+  width: 100%;
+}
+.color-data h3 a, .color-data h4 {
+  width: 181px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  display: block;
+}
+.color-data .color-swatch {
+  width: 3.75em;
+  height: 3.75em;
+  float: right;
+  display: block;
+  border: 1px solid #555;
+  margin: 0 0 5px 5px;
+  box-shadow: 1px 1px 3px 0 rgba(0, 0, 0, 0.3);
+}
 .color-swatch {
   width: 49px;
-  height: 200px;
+  height: 49px;
   display: inline-block;
   float: left;
+}
+h1 {
+  font-size: 16px;
+  margin: 0;
+}
+h2 {
+  font-size: 14px;
+  color: #909090;
+  margin: 0;
+}
+h3 {
+  font-size: 12px;
+  margin: 0;
+}
+h4 {
+  font-size: 12px;
+  margin: 0;
+  color: #909090;
+  font-weight: normal;
+}
+.hex {
+  margin: 0;
+  display: inline-block;
+  font-size: 12px;
+}
+.hex strong:after {
+  content: ":";
 }
 .hidden {
   display: none;
@@ -63,9 +109,6 @@ hr {
   border-top: 1px solid #eee;
   border-bottom: 1px solid #fff;
   margin: 10px 0;
-}
-.pull-right {
-  float: right;
 }
 small {
   font-size: 12px;

@@ -17,7 +17,7 @@ var colour_extractor = {
   rgb2hex: function(rgb_code) {
     var parts = this.split_rgb_code(rgb_code);
     var r = parts[0], g = parts[1], b = parts[2];
-    return '#' + this.color_piece_to_hex(r) + this.color_piece_to_hex(g) +
+    return this.color_piece_to_hex(r) + this.color_piece_to_hex(g) +
            this.color_piece_to_hex(b);
   },
 
@@ -66,19 +66,53 @@ var colour_extractor = {
         add_to_hash(bg_color, area);
       }
     });
-    callback(this.get_largest_color_areas(color_areas));
+    return this.get_largest_color_areas(color_areas);
+  },
+
+  get_cl_color_url: function(color) {
+    return 'http://www.colourlovers.com/api/color/' + color + '?format=json';
+  },
+
+  lookup_color: function(color, callback) {
+    var url = this.get_cl_color_url(color);
+    $.getJSON(url, function(data, status, xhr) {
+      if (data.length < 1) {
+        callback({hex: color});
+      } else {
+        data = data[0];
+        callback({title: data.title, id: data.id, user_name: data.userName,
+                  hex: data.hex, url: data.url});
+      }
+    }).error(function() {
+      callback({hex: color});
+    });
+  },
+
+  lookup_colors: function(colors, callback) {
+    var colors_data = {};
+    var num_colors = colors.length;
+    for (var i=0; i<num_colors; i++) {
+      this.lookup_color(colors[i], function(color_data) {
+        colors_data[color_data.hex] = color_data;
+        if (Object.keys(colors_data).length == num_colors) {
+          callback(colors_data);
+        }
+      });
+    }
   },
 
   on_popup_opened: function(callback) {
-    this.extract_colors(callback);
+    var colors = this.extract_colors();
+    this.lookup_colors(colors, function(color_data) {
+      callback(color_data);
+    });
   }
 };
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   if (request.greeting == 'popup_opened') {
-    colour_extractor.on_popup_opened(function(colors) {
-      console.log(colors);
-      sendResponse(colors);
+    colour_extractor.on_popup_opened(function(color_data) {
+      sendResponse(color_data);
     });
   }
 });
