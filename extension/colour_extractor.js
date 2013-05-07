@@ -53,9 +53,9 @@ var colour_extractor = {
     var color_areas = {};
     var add_to_hash = function(key, value) {
       if (color_areas.hasOwnProperty(key)) {
-        color_areas[key] = color_areas[key].concat([value]);
+        color_areas[key] = color_areas[key] + value;
       } else {
-        color_areas[key] = [value];
+        color_areas[key] = value;
       }
     };
     $('*').filter(':visible').each(function() {
