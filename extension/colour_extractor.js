@@ -165,6 +165,25 @@ var colour_extractor = {
     return hex_codes;
   },
 
+  get_gradient_rgb_codes: function(el) {
+    var background = el.css('background');
+    var grad_str = 'gradient(';
+    var index = background.indexOf(grad_str);
+    if (index < 0) {
+      return false;
+    }
+    var pieces = background.substr(index + grad_str.length).split(')');
+    var rgb_codes = [pieces[0] + ')'];
+    for (var i=0; i<pieces.length; i++) {
+      var index = pieces[i].indexOf('rgb(');
+      if (index < 0) {
+        continue;
+      }
+      rgb_codes.push(pieces[i].substr(index) + ')');
+    }
+    return rgb_codes;
+  },
+
   get_color_area_positions: function() {
     var results = {};
     var add_to_hash = function(color, area, from_top) {
@@ -184,15 +203,23 @@ var colour_extractor = {
       if (area > max_area) {
         max_area = area;
       }
+      var from_top = el.position().top;
+      if (from_top > max_from_top) {
+        max_from_top = from_top;
+      }
       var bg_color = el.css('background-color');
       if (me.has_color(bg_color)) {
-        var from_top = el.position().top;
-        if (from_top > max_from_top) {
-          max_from_top = from_top;
-        }
         add_to_hash(bg_color, area, from_top);
       }
+      var gradient_colors = me.get_gradient_rgb_codes(el);
+      for (var i=0; i<gradient_colors.length; i++) {
+        add_to_hash(gradient_colors[i], area, from_top);
+      }
     });
+    return this.pixels2percentages(results, max_area, max_from_top);
+  },
+
+  pixels2percentages: function(results, max_area, max_from_top) {
     for (var color in results) {
       // Convert raw pixels to a percentage of the page
       var area = results[color].area;
