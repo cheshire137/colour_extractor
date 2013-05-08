@@ -4,7 +4,7 @@
   "description": "This extension pulls colors from the current web page and lets you make a ColourLovers.com palette from them.",
   "version": "0.0.0.1",
   "permissions": [
-    "tabs", "<all_urls>", "background"
+    "tabs", "<all_urls>", "background", "storage"
   ],
   "content_scripts": [
     {

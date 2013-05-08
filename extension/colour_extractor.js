@@ -93,7 +93,6 @@ var colour_extractor = {
     for (var color in max_ratios) {
       weighted_colors[color].max_ratio = max_ratios[color];
     }
-    console.log(weighted_colors);
     return weighted_colors;
   },
 
@@ -155,7 +154,6 @@ var colour_extractor = {
       top_colors.push(colors[i]);
       i++;
     }
-    console.log(top_colors);
     return top_colors;
   },
 
@@ -164,7 +162,6 @@ var colour_extractor = {
     for (var i=0; i<colors.length; i++) {
       hex_codes.push(this.rgb2hex(colors[i]));
     }
-    console.log(hex_codes);
     return hex_codes;
   },
 
@@ -253,17 +250,46 @@ var colour_extractor = {
     }
   },
 
-  on_popup_opened: function(callback) {
-    var colors = this.extract_colors();
-    this.lookup_colors(colors, function(color_data) {
-      callback(color_data);
+  process_tab: function(tab_id, callback) {
+    chrome.storage.local.get('colour_extractor_data', function(data) {
+      data = data.colour_extractor_data || {};
+      if (data.hasOwnProperty(tab_id)) {
+        console.log('skipping tab ' + tab_id + '--already processing');
+        return;
+      }
+      data[tab_id] = 'processing';
+      chrome.storage.local.set({'colour_extractor_data': data}, function() {
+        callback();
+      });
+    });
+  },
+
+  finished_processing_tab: function(tab_id) {
+    chrome.storage.local.get('colour_extractor_data', function(data) {
+      data = data.colour_extractor_data || {};
+      delete data[tab_id];
+      chrome.storage.local.set({'colour_extractor_data': data}, function() {
+        // no-op
+      });
+    });
+  },
+
+  on_popup_opened: function(tab_id, callback) {
+    var me = this;
+    this.process_tab(tab_id, function() {
+      var colors = me.extract_colors();
+      console.log(colors);
+      me.lookup_colors(colors, function(color_data) {
+        me.finished_processing_tab(tab_id);
+        callback(color_data);
+      });
     });
   }
 };
 
 chrome.extension.onRequest.addListener(function(request, sender, sendResponse) {
   if (request.greeting == 'popup_opened') {
-    colour_extractor.on_popup_opened(function(color_data) {
+    colour_extractor.on_popup_opened(request.tab_id, function(color_data) {
       sendResponse(color_data);
     });
   }

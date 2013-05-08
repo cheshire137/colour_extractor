@@ -66,18 +66,19 @@ var extractor_popup = {
   },
 
   on_popup_opened: function() {
+    var me = this;
+    chrome.tabs.getSelected(null, function(tab) {
+      chrome.tabs.sendRequest(
+        tab.id,
+        {greeting: 'popup_opened', tab_id: tab.id},
+        function(color_data) {
+          me.on_colors_extracted(color_data);
+        }
+      );
+    });
   }
 };
 
 document.addEventListener('DOMContentLoaded', function() {
   extractor_popup.on_popup_opened();
-  chrome.tabs.getSelected(null, function(tab) {
-    chrome.tabs.sendRequest(
-      tab.id,
-      {greeting: 'popup_opened'},
-      function(color_data) {
-        extractor_popup.on_colors_extracted(color_data);
-      }
-    );
-  });
 });
