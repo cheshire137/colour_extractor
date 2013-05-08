@@ -78,7 +78,8 @@ var colour_extractor = {
     var weighted_colors = {};
     var colors = [];
     for (var color in color_areas) {
-      weighted_colors[color] = {area: color_areas[color]};
+      weighted_colors[color] = {area: color_areas[color],
+                                hue: this.get_hue(color)};
       colors.push(color);
     }
     var max_ratios = this.get_max_color_ratios(colors);
@@ -113,20 +114,22 @@ var colour_extractor = {
   },
 
   get_color_weight: function(data) {
-    console.log(data);
-    return data.area * data.max_ratio;
+    return 0.2*data.area + 0.3*data.max_ratio + 0.5*data.hue;
   },
 
   get_colors_sorted_by_weight: function(data) {
     var tuples = [];
     for (var color in data) {
       var color_data = data[color];
-      tuples.push([color, color_data.area, color_data.max_ratio]);
+      console.log([color, color_data.area, color_data.max_ratio,
+                   color_data.hue, this.get_color_weight(color_data)]);
+      tuples.push([color, color_data.area, color_data.max_ratio,
+                   color_data.hue]);
     }
     var me = this;
     tuples.sort(function(a, b) {
-      a = me.get_color_weight({area: a[1], max_ratio: a[2]});
-      b = me.get_color_weight({area: b[1], max_ratio: b[2]});
+      a = me.get_color_weight({area: a[1], max_ratio: a[2], hue: a[3]});
+      b = me.get_color_weight({area: b[1], max_ratio: b[2], hue: b[3]});
       return a < b ? 1 : (a > b ? -1 : 0);
     });
     var sorted_colors = [];
