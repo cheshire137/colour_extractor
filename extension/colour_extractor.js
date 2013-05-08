@@ -19,6 +19,11 @@ var colour_extractor = {
     return this.rgb2hsl(rgb_code)[0] * 360;
   },
 
+  get_hue_percent: function(rgb_code) {
+    var hue = this.get_hue(rgb_code);
+    return Math.round((hue / 360) * 100);
+  },
+
   // See http://stackoverflow.com/a/3732187/38743
   rgb2hsl: function(rgb_code) {
     var parts = this.split_rgb_code(rgb_code);
@@ -74,12 +79,14 @@ var colour_extractor = {
     return (this.y(rgb_code1) + 0.05) / (this.y(rgb_code2) + 0.05);
   },
 
-  get_color_weight_data: function(color_areas) {
+  get_color_weight_data: function(color_area_positions) {
     var weighted_colors = {};
     var colors = [];
-    for (var color in color_areas) {
-      weighted_colors[color] = {area: color_areas[color],
-                                hue: this.get_hue(color)};
+    for (var color in color_area_positions) {
+      var area = color_area_positions[color].area;
+      var position = color_area_positions[color].position;
+      weighted_colors[color] = {area: area, position: position,
+                                hue: this.get_hue_percent(color)};
       colors.push(color);
     }
     var max_ratios = this.get_max_color_ratios(colors);
@@ -106,15 +113,17 @@ var colour_extractor = {
       for (var j=0; j<colors.length; j++) {
         var color2 = colors[j];
         var ratio = this.get_color_ratio(color1, color2);
-        add_ratio(color1, ratio);
-        add_ratio(color2, ratio);
+        var ratio_pct = Math.round((ratio / 21) * 100);
+        add_ratio(color1, ratio_pct);
+        add_ratio(color2, ratio_pct);
       }
     }
     return ratios;
   },
 
   get_color_weight: function(data) {
-    return 0.2*data.area + 0.3*data.max_ratio + 0.5*data.hue;
+    return 0.2*data.area + 0.1*data.max_ratio + 0.4*data.hue +
+           0.3*data.position;
   },
 
   get_colors_sorted_by_weight: function(data) {
@@ -122,14 +131,14 @@ var colour_extractor = {
     for (var color in data) {
       var color_data = data[color];
       console.log([color, color_data.area, color_data.max_ratio,
-                   color_data.hue, this.get_color_weight(color_data)]);
-      tuples.push([color, color_data.area, color_data.max_ratio,
-                   color_data.hue]);
+                   color_data.hue, color_data.position,
+                   this.get_color_weight(color_data)]);
+      tuples.push([color, color_data]);
     }
     var me = this;
     tuples.sort(function(a, b) {
-      a = me.get_color_weight({area: a[1], max_ratio: a[2], hue: a[3]});
-      b = me.get_color_weight({area: b[1], max_ratio: b[2], hue: b[3]});
+      a = me.get_color_weight(a[1]);
+      b = me.get_color_weight(b[1]);
       return a < b ? 1 : (a > b ? -1 : 0);
     });
     var sorted_colors = [];
@@ -159,25 +168,54 @@ var colour_extractor = {
     return hex_codes;
   },
 
-  extract_colors: function(callback) {
-    var me = this;
-    var color_areas = {};
-    var add_to_hash = function(key, value) {
-      if (color_areas.hasOwnProperty(key)) {
-        color_areas[key] = color_areas[key] + value;
+  get_color_area_positions: function() {
+    var results = {};
+    var add_to_hash = function(color, area, from_top) {
+      if (results.hasOwnProperty(color)) {
+        var prev_area = results[color].area;
+        results[color] = {area: prev_area + area, position: from_top};
       } else {
-        color_areas[key] = value;
+        results[color] = {area: area, position: from_top};
       }
     };
+    var me = this;
+    var max_area = 0;
+    var max_from_top = 0;
     $('*').filter(':visible').each(function() {
       var el = $(this);
       var area = el.width() * el.height();
+      if (area > max_area) {
+        max_area = area;
+      }
       var bg_color = el.css('background-color');
       if (me.has_color(bg_color)) {
-        add_to_hash(bg_color, area);
+        var from_top = el.position().top;
+        if (from_top > max_from_top) {
+          max_from_top = from_top;
+        }
+        add_to_hash(bg_color, area, from_top);
       }
     });
-    var color_weight_data = this.get_color_weight_data(color_areas);
+    for (var color in results) {
+      // Convert raw pixels to a percentage of the page
+      var area = results[color].area;
+      var area_pct = Math.round((area / max_area) * 100)
+      var position = results[color].position;
+      // 0 = 100%
+      // 5000 = 0%
+      // element near top:    5
+      // element near bottom: 3500
+      // max from top:        5000
+      var position_pct = Math.round(((max_from_top - position) / max_from_top) *
+                                    100);
+      results[color] = {area: area_pct, position: position_pct};
+    }
+    return results;
+  },
+
+  extract_colors: function(callback) {
+    var color_area_positions = this.get_color_area_positions();
+    var color_weight_data = this.get_color_weight_data(color_area_positions);
     var sorted_colors = this.get_colors_sorted_by_weight(color_weight_data);
     var top_colors = this.get_top_colors(sorted_colors);
     return this.get_hex_codes(top_colors);
