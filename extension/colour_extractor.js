@@ -146,9 +146,6 @@ var colour_extractor = {
     var tuples = [];
     for (var color in data) {
       var color_data = data[color];
-      console.log([color, color_data.area, color_data.max_ratio,
-                   color_data.hue, color_data.position,
-                   this.get_color_weight(color_data)]);
       tuples.push([color, color_data]);
     }
     var me = this;
@@ -190,7 +187,7 @@ var colour_extractor = {
       return false;
     }
     var pieces = background.substr(index + grad_str.length).split(')');
-    var rgb_codes = [pieces[0] + ')'];
+    var rgb_codes = [];
     for (var i=0; i<pieces.length; i++) {
       var index = pieces[i].indexOf('rgb(');
       if (index < 0) {
@@ -298,7 +295,6 @@ var colour_extractor = {
     chrome.storage.local.get('colour_extractor_data', function(data) {
       data = data.colour_extractor_data || {};
       if (data.hasOwnProperty(tab_id)) {
-        console.log('skipping tab ' + tab_id + '--already processing');
         return;
       }
       data[tab_id] = 'processing';
@@ -322,7 +318,6 @@ var colour_extractor = {
     var me = this;
     this.process_tab(tab_id, function() {
       var colors = me.extract_colors();
-      console.log(colors);
       me.lookup_colors(colors, function(color_data) {
         me.finished_processing_tab(tab_id);
         callback(color_data);
