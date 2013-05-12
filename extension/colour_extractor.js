@@ -151,6 +151,7 @@ var colour_extractor = {
     var max_ratios = this.get_max_color_ratios(colors);
     for (var color in max_ratios) {
       weighted_colors[color].max_ratio = max_ratios[color];
+      console.log(weighted_colors[color]);
     }
     return weighted_colors;
   },
@@ -159,19 +160,24 @@ var colour_extractor = {
     var ratios = {};
     var add_ratio = function(color, ratio) {
       if (ratios.hasOwnProperty(color)) {
-        if (ratios[color] < ratio) {
+        if (ratios[color] == 100) {
           ratios[color] = ratio;
+        } else {
+          ratios[color] = Math.round(ratio, ratios[color]);
         }
       } else {
-        ratios[color] = ratio;
+        ratios[color] = 100;
       }
     };
-    for (var i=0; i<colors.length; i++) {
+    var mid_point = Math.floor(colors.length / 2);
+    for (var i=0; i<mid_point; i++) {
       var color1 = colors[i];
-      for (var j=0; j<colors.length; j++) {
+      for (var j=mid_point; j<colors.length; j++) {
         var color2 = colors[j];
         var ratio = this.get_color_ratio(color1, color2);
-        var ratio_pct = Math.round((ratio / 21) * 100);
+        // ratio 1  --> same color
+        // ratio 21 --> opposite colors
+        var ratio_pct = 100 - Math.round(((21 - ratio) / 21) * 100);
         add_ratio(color1, ratio_pct);
         add_ratio(color2, ratio_pct);
       }
@@ -180,10 +186,7 @@ var colour_extractor = {
   },
 
   get_color_weight: function(data) {
-    console.log(data);
-    console.log('weight: ' + (0.3*data.area + 0.1*data.max_ratio + 0.3*data.hue +
-           0.3*data.position));
-    return 0.3*data.area + 0.1*data.max_ratio + 0.3*data.hue +
+    return 0.4*data.area + 0*data.max_ratio + 0.3*data.hue +
            0.3*data.position;
   },
 
@@ -258,7 +261,8 @@ var colour_extractor = {
     var max_from_top = 0;
     var elements = $('*').filter(':visible');
     var num_elements = elements.length;
-    var get_color_from_element = function(index, element) {
+    var num_processed = 0;
+    elements.each(function() {
       var el = $(this);
       var area = el.width() * el.height();
       max_area = Math.max(area, max_area);
@@ -267,10 +271,8 @@ var colour_extractor = {
       var background = el.css('background');
       me.get_image_color(
         background,
-        index == num_elements - 1,
         function(img_color, is_last) {
           if (me.has_color(img_color)) {
-            console.log('adding img color ' + img_color + ' - ' + background);
             add_to_hash(img_color, area, from_top);
           } else {
             var bg_color = el.css('background-color');
@@ -282,24 +284,24 @@ var colour_extractor = {
               add_to_hash(gradient_colors[i], area, from_top);
             }
           }
-          if (is_last) {
+          num_processed++;
+          if (num_processed == num_elements) {
             callback(me.pixels2percentages(results, max_area, max_from_top));
           }
         }
       );
-    };
-    elements.each(get_color_from_element);
+    });
   },
 
-  get_image_color: function(background, is_last, callback) {
+  get_image_color: function(background, callback) {
     var index = background.indexOf('url(');
     if (index === -1) {
-      callback('rgba(0, 0, 0, 0)', is_last);
+      callback('rgba(0, 0, 0, 0)');
       return;
     }
     var img_url = background.substr(index + 'url('.length).split(')')[0];
     this.get_average_image_rgb(img_url, function(img_color) {
-      callback(img_color, is_last);
+      callback(img_color);
     });
   },
 
@@ -324,7 +326,6 @@ var colour_extractor = {
   extract_colors: function(callback) {
     var me = this;
     this.get_color_area_positions(function(color_area_positions) {
-      console.log('-----GOT COLOR AREA POSITIONS-----');
       var color_weight_data = me.get_color_weight_data(color_area_positions);
       var sorted_colors = me.get_colors_sorted_by_weight(color_weight_data);
       var top_colors = me.get_top_colors(sorted_colors);
