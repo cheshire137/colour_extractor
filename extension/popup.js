@@ -86,10 +86,12 @@ var extractor_popup = {
   },
 
   on_colors_extracted: function(color_data) {
-    var colors = Object.keys(color_data);
-    this.display_colors(colors);
-    this.describe_colors(color_data);
-    this.set_create_link(colors);
+    if (color_data) {
+      var colors = Object.keys(color_data);
+      this.display_colors(colors);
+      this.describe_colors(color_data);
+      this.set_create_link(colors);
+    }
   },
 
   on_popup_opened: function() {
