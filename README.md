@@ -6,6 +6,8 @@ images.
 
 ![Screenshot of Colour Extractor](http://github.com/moneypenny/colour_extractor/raw/master/screenshot.png)
 
+![Screenshot 2 of Colour Extractor](http://github.com/moneypenny/colour_extractor/raw/master/screenshot1.png)
+
 ## To-do List
 
 - Pull colors from large images, including background images, on the page.
