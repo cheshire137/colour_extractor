@@ -18,6 +18,47 @@
 var colour_extractor = {
   palette_size: 5,
 
+  // See http://stackoverflow.com/a/2541680/38743
+  get_average_image_rgb: function(img_url, width, height, callback) {
+    var block_size = 5, // only visit every 5 pixels
+        default_rgb = 'rgba(0, 0, 0, 0)', // for non-supporting envs
+        canvas = document.createElement('canvas'),
+        context = canvas.getContext && canvas.getContext('2d'),
+        data, i = -4, length,
+        rgb = {r: 0, g: 0, b: 0},
+        count = 0;
+    if (!context) {
+      callback(default_rgb);
+      return;
+    }
+    canvas.width = width;
+    canvas.height = height;
+    var img = new Image();
+    img.onload = function() {
+      context.drawImage(img, 0, 0);
+      try {
+        data = context.getImageData(0, 0, width, height);
+      } catch(e) {
+        callback(default_rgb);
+        return;
+      }
+      length = data.data.length;
+      while ((i += block_size * 4) < length) {
+        ++count;
+        rgb.r += data.data[i];
+        rgb.g += data.data[i+1];
+        rgb.b += data.data[i+2];
+      }
+      // ~~ used to floor values
+      rgb.r = ~~(rgb.r/count);
+      rgb.g = ~~(rgb.g/count);
+      rgb.b = ~~(rgb.b/count);
+      callback('rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')');
+    };
+    document.body.appendChild(canvas);
+    img.src = img_url;
+  },
+
   color_piece_to_hex: function(piece) {
     var hex = piece.toString(16);
     return hex.length == 1 ? '0' + hex : hex;
@@ -198,7 +239,7 @@ var colour_extractor = {
     return rgb_codes;
   },
 
-  get_color_area_positions: function() {
+  get_color_area_positions: function(callback) {
     var results = {};
     var add_to_hash = function(color, area, from_top) {
       if (results.hasOwnProperty(color)) {
@@ -211,9 +252,13 @@ var colour_extractor = {
     var me = this;
     var max_area = 0;
     var max_from_top = 0;
-    $('*').filter(':visible').each(function() {
+    var elements = $('*').filter(':visible');
+    var num_elements = elements.length;
+    elements.each(function(index, element) {
       var el = $(this);
-      var area = el.width() * el.height();
+      var width = el.width();
+      var height = el.height();
+      var area = width * height;
       if (area > max_area) {
         max_area = area;
       }
@@ -229,8 +274,32 @@ var colour_extractor = {
       for (var i=0; i<gradient_colors.length; i++) {
         add_to_hash(gradient_colors[i], area, from_top);
       }
+      var background = el.css('background');
+      me.get_image_color(
+        background, width, height, index == num_elements - 1,
+        function(img_color, is_last) {
+          if (me.has_color(img_color)) {
+            add_to_hash(img_color, area, from_top);
+          }
+          if (is_last) {
+            callback(me.pixels2percentages(results, max_area, max_from_top));
+          }
+        }
+      );
     });
-    return this.pixels2percentages(results, max_area, max_from_top);
+  },
+
+  get_image_color: function(background, width, height, is_last, callback) {
+    var index = background.indexOf('url(');
+    if (index === -1) {
+      callback('rgba(0, 0, 0, 0)', is_last);
+      return;
+    }
+    var img_url = background.substr(index + 'url('.length).split(')')[0];
+    this.get_average_image_rgb(img_url, width, height, function(img_color) {
+      console.log(img_url + ' - ' + img_color);
+      callback(img_color, is_last);
+    });
   },
 
   pixels2percentages: function(results, max_area, max_from_top) {
@@ -252,11 +321,14 @@ var colour_extractor = {
   },
 
   extract_colors: function(callback) {
-    var color_area_positions = this.get_color_area_positions();
-    var color_weight_data = this.get_color_weight_data(color_area_positions);
-    var sorted_colors = this.get_colors_sorted_by_weight(color_weight_data);
-    var top_colors = this.get_top_colors(sorted_colors);
-    return this.get_hex_codes(top_colors);
+    var me = this;
+    this.get_color_area_positions(function(color_area_positions) {
+      var color_weight_data = me.get_color_weight_data(color_area_positions);
+      var sorted_colors = me.get_colors_sorted_by_weight(color_weight_data);
+      var top_colors = me.get_top_colors(sorted_colors);
+      var hex_codes = me.get_hex_codes(top_colors);
+      callback(hex_codes);
+    });
   },
 
   get_cl_color_url: function(color) {
@@ -316,13 +388,14 @@ var colour_extractor = {
 
   on_popup_opened: function(tab_id, callback) {
     var me = this;
-    this.process_tab(tab_id, function() {
-      var colors = me.extract_colors();
-      me.lookup_colors(colors, function(color_data) {
-        me.finished_processing_tab(tab_id);
-        callback(color_data);
+    // this.process_tab(tab_id, function() {
+      me.extract_colors(function(colors) {
+        me.lookup_colors(colors, function(color_data) {
+          // me.finished_processing_tab(tab_id);
+          callback(color_data);
+        });
       });
-    });
+    // });
   }
 };
 
