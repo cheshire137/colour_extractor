@@ -10,8 +10,9 @@ images.
 
 ## To-do List
 
-- Pull colors from large images, including background images, on the page.
 - Provide a color picker so you can choose your own colors from the page.
+- Pixelize images to pick colors from them.
+- Screenshot whole page, pick colors from that?
 
 ## Credits
 
