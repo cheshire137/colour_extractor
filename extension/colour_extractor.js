@@ -19,22 +19,22 @@ var colour_extractor = {
   palette_size: 5,
 
   // See http://stackoverflow.com/a/2541680/38743
-  get_average_image_rgb: function(img_url, width, height, callback) {
+  get_average_image_rgb: function(img_url, callback) {
     var block_size = 5, // only visit every 5 pixels
         default_rgb = 'rgba(0, 0, 0, 0)', // for non-supporting envs
         canvas = document.createElement('canvas'),
         context = canvas.getContext && canvas.getContext('2d'),
-        data, i = -4, length,
+        data, i = -4, length, width, height,
         rgb = {r: 0, g: 0, b: 0},
         count = 0;
     if (!context) {
       callback(default_rgb);
       return;
     }
-    canvas.width = width;
-    canvas.height = height;
     var img = new Image();
     img.onload = function() {
+      width = canvas.width = img.naturalWidth;
+      height = canvas.height = img.naturalHeight;
       context.drawImage(img, 0, 0);
       try {
         data = context.getImageData(0, 0, width, height);
@@ -53,9 +53,9 @@ var colour_extractor = {
       rgb.r = ~~(rgb.r/count);
       rgb.g = ~~(rgb.g/count);
       rgb.b = ~~(rgb.b/count);
-      callback('rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')');
+      var rgb_code = 'rgb(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ')';
+      callback(rgb_code);
     };
-    document.body.appendChild(canvas);
     img.src = img_url;
   },
 
@@ -144,7 +144,8 @@ var colour_extractor = {
       var area = color_area_positions[color].area;
       var position = color_area_positions[color].position;
       weighted_colors[color] = {area: area, position: position,
-                                hue: this.get_hue_percent(color)};
+                                hue: this.get_hue_percent(color),
+                                color: color};
       colors.push(color);
     }
     var max_ratios = this.get_max_color_ratios(colors);
@@ -179,7 +180,10 @@ var colour_extractor = {
   },
 
   get_color_weight: function(data) {
-    return 0.2*data.area + 0.1*data.max_ratio + 0.4*data.hue +
+    console.log(data);
+    console.log('weight: ' + (0.3*data.area + 0.1*data.max_ratio + 0.3*data.hue +
+           0.3*data.position));
+    return 0.3*data.area + 0.1*data.max_ratio + 0.3*data.hue +
            0.3*data.position;
   },
 
@@ -254,50 +258,47 @@ var colour_extractor = {
     var max_from_top = 0;
     var elements = $('*').filter(':visible');
     var num_elements = elements.length;
-    elements.each(function(index, element) {
+    var get_color_from_element = function(index, element) {
       var el = $(this);
-      var width = el.width();
-      var height = el.height();
-      var area = width * height;
-      if (area > max_area) {
-        max_area = area;
-      }
+      var area = el.width() * el.height();
+      max_area = Math.max(area, max_area);
       var from_top = el.position().top;
-      if (from_top > max_from_top) {
-        max_from_top = from_top;
-      }
-      var bg_color = el.css('background-color');
-      if (me.has_color(bg_color)) {
-        add_to_hash(bg_color, area, from_top);
-      }
-      var gradient_colors = me.get_gradient_rgb_codes(el);
-      for (var i=0; i<gradient_colors.length; i++) {
-        add_to_hash(gradient_colors[i], area, from_top);
-      }
+      max_from_top = Math.max(from_top, max_from_top);
       var background = el.css('background');
       me.get_image_color(
-        background, width, height, index == num_elements - 1,
+        background,
+        index == num_elements - 1,
         function(img_color, is_last) {
           if (me.has_color(img_color)) {
+            console.log('adding img color ' + img_color + ' - ' + background);
             add_to_hash(img_color, area, from_top);
+          } else {
+            var bg_color = el.css('background-color');
+            if (me.has_color(bg_color)) {
+              add_to_hash(bg_color, area, from_top);
+            }
+            var gradient_colors = me.get_gradient_rgb_codes(el);
+            for (var i=0; i<gradient_colors.length; i++) {
+              add_to_hash(gradient_colors[i], area, from_top);
+            }
           }
           if (is_last) {
             callback(me.pixels2percentages(results, max_area, max_from_top));
           }
         }
       );
-    });
+    };
+    elements.each(get_color_from_element);
   },
 
-  get_image_color: function(background, width, height, is_last, callback) {
+  get_image_color: function(background, is_last, callback) {
     var index = background.indexOf('url(');
     if (index === -1) {
       callback('rgba(0, 0, 0, 0)', is_last);
       return;
     }
     var img_url = background.substr(index + 'url('.length).split(')')[0];
-    this.get_average_image_rgb(img_url, width, height, function(img_color) {
-      console.log(img_url + ' - ' + img_color);
+    this.get_average_image_rgb(img_url, function(img_color) {
       callback(img_color, is_last);
     });
   },
@@ -323,6 +324,7 @@ var colour_extractor = {
   extract_colors: function(callback) {
     var me = this;
     this.get_color_area_positions(function(color_area_positions) {
+      console.log('-----GOT COLOR AREA POSITIONS-----');
       var color_weight_data = me.get_color_weight_data(color_area_positions);
       var sorted_colors = me.get_colors_sorted_by_weight(color_weight_data);
       var top_colors = me.get_top_colors(sorted_colors);
