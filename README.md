@@ -4,11 +4,9 @@ This is a Chrome extension that will let you pull the main five colors from a
 page and create a palette with them on [ColourLovers.com](http://colourlovers.com). The extension currently only grabs colors from CSS used on the page, not
 images.
 
-**[Available in the Chrome Web Store](https://chrome.google.com/webstore/detail/colour-extractor/nndpibfappjacgbninhabcokfkdpnmpe)**
+![Screenshot of Colour Extractor](http://github.com/cheshire137/colour_extractor/raw/master/screenshot.png)
 
-![Screenshot of Colour Extractor](http://github.com/moneypenny/colour_extractor/raw/master/screenshot.png)
-
-![Screenshot 2 of Colour Extractor](http://github.com/moneypenny/colour_extractor/raw/master/screenshot1.png)
+![Screenshot 2 of Colour Extractor](http://github.com/cheshire137/colour_extractor/raw/master/screenshot1.png)
 
 ## To-do List
 
